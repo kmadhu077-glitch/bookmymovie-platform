@@ -1,0 +1,210 @@
+version: '3.8'
+
+services:
+  # Authentication Service
+  auth-service:
+    build: .
+    container_name: bookmymovie-auth
+    command: python backend/secure_auth_service.py
+    ports:
+      - "8013:8013"
+    environment:
+      - DATABASE_URL=postgresql://bookmymovie:SecurePass123!@db:5432/bookmymovie
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-super-secure-jwt-secret-key-here
+      - ENVIRONMENT=production
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8013/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Catalog Service
+  catalog-service:
+    build: .
+    container_name: bookmymovie-catalog
+    command: python backend/secure_catalog_service.py
+    ports:
+      - "8012:8012"
+    environment:
+      - DATABASE_URL=postgresql://bookmymovie:SecurePass123!@db:5432/bookmymovie
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # Booking Service
+  booking-service:
+    build: .
+    container_name: bookmymovie-booking
+    command: python backend/secure_booking_service.py
+    ports:
+      - "8014:8014"
+    environment:
+      - DATABASE_URL=postgresql://bookmymovie:SecurePass123!@db:5432/bookmymovie
+      - REDIS_URL=redis://redis:6379/2
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build: .
+    container_name: bookmymovie-payment
+    command: python backend/secure_payment_service.py
+    ports:
+      - "8015:8015"
+    environment:
+      - DATABASE_URL=postgresql://bookmymovie:SecurePass123!@db:5432/bookmymovie
+      - REDIS_URL=redis://redis:6379/3
+      - STRIPE_SECRET_KEY=sk_test_your_stripe_key_here
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # Real-time Service
+  realtime-service:
+    build: .
+    container_name: bookmymovie-realtime
+    command: python backend/secure_realtime_service.py
+    ports:
+      - "8016:8016"
+    environment:
+      - DATABASE_URL=postgresql://bookmymovie:SecurePass123!@db:5432/bookmymovie
+      - REDIS_URL=redis://redis:6379/4
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: bookmymovie-db
+    environment:
+      - POSTGRES_DB=bookmymovie
+      - POSTGRES_USER=bookmymovie
+      - POSTGRES_PASSWORD=SecurePass123!
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookmymovie -d bookmymovie"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: bookmymovie-redis
+    command: redis-server --appendonly yes --requirepass RedisSecurePass123!
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: bookmymovie-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend:/var/www/html:ro
+    depends_on:
+      - auth-service
+      - catalog-service
+      - booking-service
+      - payment-service
+      - realtime-service
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # Monitoring (Prometheus)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bookmymovie-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+  # Monitoring Dashboard (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bookmymovie-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=SecureGrafanaPass123!
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - bookmymovie-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  bookmymovie-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

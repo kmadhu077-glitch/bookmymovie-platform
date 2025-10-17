@@ -1,0 +1,118 @@
+# BookMyMovie Platform - Production Requirements
+
+# Core FastAPI and ASGI
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# HTTP Clients & Networking
+httpx==0.25.2
+aiofiles==23.2.1
+
+# Data Validation & Serialization
+pydantic[email]==2.5.2
+email-validator==2.1.0
+
+# Caching & Performance
+redis==5.0.1
+hiredis==2.2.3
+
+# Real-time Communication
+websockets==12.0
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# Date & Time
+python-dateutil==2.8.2
+
+# Logging & Monitoring
+structlog==23.2.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Development
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Image Processing (for movie posters)
+Pillow==10.1.0
+
+# Background Tasks
+celery==5.3.4
+
+# API Documentation
+swagger-ui-bundle==0.0.9
+
+# Rate Limiting
+slowapi==0.1.9
+
+# CORS
+fastapi-cors==0.0.6
+
+# File Upload
+python-multipart==0.0.6
+
+# JSON Web Tokens
+PyJWT==2.8.0
+
+# Phone Number Validation
+phonenumbers==8.13.27
+
+# Geolocation
+geopy==2.4.1
+
+# Excel/CSV Export
+openpyxl==3.1.2
+pandas==2.1.4
+
+# Email Sending
+sendgrid==6.10.0
+jinja2==3.1.2
+
+# Payment Processing (Mock for development)
+stripe==7.9.0
+
+# SMS/OTP Services
+twilio==8.11.0
+
+# Database Migration
+alembic==1.12.1
+
+# Password Strength
+zxcvbn==4.4.28
+
+# QR Code Generation
+qrcode[pil]==7.4.2
+
+# PDF Generation
+reportlab==4.0.8
+
+# Health Check
+fastapi-health==0.4.0
+
+# Prometheus Metrics
+prometheus-client==0.19.0
+
+# Request ID Tracking
+asgi-correlation-id==4.3.1
+
+# Static Files
+aiofiles==23.2.1
+
+# Timezone
+pytz==2023.3

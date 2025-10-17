@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookMyMovie - Real-time Features Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .demo-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .demo-section h3 {
+            color: #fff;
+            margin-top: 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .connection-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .connected { background: #4CAF50; color: white; }
+        .disconnected { background: #f44336; color: white; }
+        .connecting { background: #FF9800; color: white; }
+        
+        .seat-map {
+            display: grid;
+            grid-template-columns: repeat(12, 30px);
+            gap: 5px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .seat {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .seat.available { background: #4CAF50; color: white; }
+        .seat.selected { background: #2196F3; color: white; }
+        .seat.booked { background: #f44336; color: white; cursor: not-allowed; }
+        .seat.held { background: #FF9800; color: white; cursor: not-allowed; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .timestamp {
+            color: #888;
+            font-size: 10px;
+        }
+        
+        .notification {
+            background: rgba(33, 150, 243, 0.9);
+            color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 BookMyMovie - Real-time Features Demo</h1>
+        
+        <!-- Connection Status -->
+        <div class="demo-section">
+            <h3>📡 WebSocket Connections</h3>
+            <div>
+                Seat Updates: <span id="seatStatus" class="connection-status disconnected">Disconnected</span>
+                <button onclick="connectSeats()">Connect</button>
+                <button onclick="disconnectSeats()">Disconnect</button>
+            </div>
+            <div>
+                Notifications: <span id="notificationStatus" class="connection-status disconnected">Disconnected</span>
+                <button onclick="connectNotifications()">Connect</button>
+                <button onclick="disconnectNotifications()">Disconnect</button>
+            </div>
+        </div>
+        
+        <!-- Real-time Statistics -->
+        <div class="demo-section">
+            <h3>📊 Real-time Statistics</h3>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="connectedUsers">0</div>
+                    <div class="stat-label">Connected Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="availableSeats">120</div>
+                    <div class="stat-label">Available Seats</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="selectedSeats">0</div>
+                    <div class="stat-label">Selected Seats</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeBookings">0</div>
+                    <div class="stat-label">Active Bookings</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interactive Seat Map -->
+        <div class="demo-section">
+            <h3>🎭 Interactive Seat Selection (Showtime #1)</h3>
+            <div class="controls">
+                <button onclick="selectRandomSeats()">Select Random Seats</button>
+                <button onclick="releaseAllSeats()">Release All Seats</button>
+                <button onclick="simulateBooking()">Simulate Booking</button>
+            </div>
+            <div class="seat-map" id="seatMap">
+                <!-- Seats will be generated here -->
+            </div>
+            <div style="margin-top: 15px;">
+                <span style="display: inline-flex; align-items: center; margin-right: 20px;">
+                    <div class="seat available" style="margin-right: 5px;"></div> Available
+                </span>
+                <span style="display: inline-flex; align-items: center; margin-right: 20px;">
+                    <div class="seat selected" style="margin-right: 5px;"></div> Selected
+                </span>
+                <span style="display: inline-flex; align-items: center; margin-right: 20px;">
+                    <div class="seat booked" style="margin-right: 5px;"></div> Booked
+                </span>
+                <span style="display: inline-flex; align-items: center;">
+                    <div class="seat held" style="margin-right: 5px;"></div> Temporarily Held
+                </span>
+            </div>
+        </div>
+        
+        <!-- Live Notifications -->
+        <div class="demo-section">
+            <h3>🔔 Live Notifications</h3>
+            <div class="controls">
+                <button onclick="sendTestNotification()">Send Test Notification</button>
+                <button onclick="clearNotifications()">Clear Notifications</button>
+            </div>
+            <div id="notifications"></div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="demo-section">
+            <h3>📝 Real-time Activity Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div class="log" id="activityLog"></div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connections
+        let seatSocket = null;
+        let notificationSocket = null;
+        
+        // State management
+        let selectedSeats = new Set();
+        let sessionId = 'demo-session-' + Math.random().toString(36).substr(2, 9);
+        
+        // Initialize seat map
+        function initSeatMap() {
+            const seatMap = document.getElementById('seatMap');
+            const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+            
+            rows.forEach(row => {
+                for (let num = 1; num <= 12; num++) {
+                    const seat = document.createElement('div');
+                    seat.className = 'seat available';
+                    seat.textContent = row + num;
+                    seat.dataset.row = row;
+                    seat.dataset.number = num;
+                    seat.onclick = () => toggleSeat(row, num);
+                    seatMap.appendChild(seat);
+                }
+            });
+        }
+        
+        // Toggle seat selection
+        function toggleSeat(row, number) {
+            const seatKey = row + number;
+            const seatElement = document.querySelector(`[data-row="${row}"][data-number="${number}"]`);
+            
+            if (seatElement.classList.contains('booked') || seatElement.classList.contains('held')) {
+                return; // Can't select booked/held seats
+            }
+            
+            if (selectedSeats.has(seatKey)) {
+                // Deselect seat
+                selectedSeats.delete(seatKey);
+                seatElement.classList.remove('selected');
+                seatElement.classList.add('available');
+                
+                // Send release message
+                if (seatSocket && seatSocket.readyState === WebSocket.OPEN) {
+                    seatSocket.send(JSON.stringify({
+                        action: 'release_seats',
+                        seats: [{ row, number }],
+                        session_id: sessionId
+                    }));
+                }
+            } else {
+                // Select seat
+                selectedSeats.add(seatKey);
+                seatElement.classList.remove('available');
+                seatElement.classList.add('selected');
+                
+                // Send selection message
+                if (seatSocket && seatSocket.readyState === WebSocket.OPEN) {
+                    seatSocket.send(JSON.stringify({
+                        action: 'select_seats',
+                        seats: [{ row, number }],
+                        session_id: sessionId
+                    }));
+                }
+            }
+            
+            updateStats();
+        }
+        
+        // Connect to seat updates
+        function connectSeats() {
+            const status = document.getElementById('seatStatus');
+            status.textContent = 'Connecting...';
+            status.className = 'connection-status connecting';
+            
+            seatSocket = new WebSocket('ws://127.0.0.1:8007/ws/seats/1');
+            
+            seatSocket.onopen = function(event) {
+                status.textContent = 'Connected';
+                status.className = 'connection-status connected';
+                logActivity('✅ Connected to seat updates');
+            };
+            
+            seatSocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                logActivity(`🔄 Seat update: ${data.type}`, data);
+                
+                if (data.type === 'seat_selection') {
+                    data.seats.forEach(seat => {
+                        const seatElement = document.querySelector(`[data-row="${seat.row}"][data-number="${seat.number}"]`);
+                        if (seatElement) {
+                            if (data.action === 'selected' && data.session_id !== sessionId) {
+                                seatElement.classList.remove('available');
+                                seatElement.classList.add('held');
+                            } else if (data.action === 'released') {
+                                seatElement.classList.remove('held', 'selected');
+                                seatElement.classList.add('available');
+                            }
+                        }
+                    });
+                }
+                
+                updateStats();
+            };
+            
+            seatSocket.onclose = function(event) {
+                status.textContent = 'Disconnected';
+                status.className = 'connection-status disconnected';
+                logActivity('❌ Seat updates disconnected');
+            };
+            
+            seatSocket.onerror = function(error) {
+                logActivity('🚫 Seat WebSocket error: ' + error);
+            };
+        }
+        
+        // Connect to notifications
+        function connectNotifications() {
+            const status = document.getElementById('notificationStatus');
+            status.textContent = 'Connecting...';
+            status.className = 'connection-status connecting';
+            
+            notificationSocket = new WebSocket('ws://127.0.0.1:8007/ws/notifications/1');
+            
+            notificationSocket.onopen = function(event) {
+                status.textContent = 'Connected';
+                status.className = 'connection-status connected';
+                logActivity('✅ Connected to notifications');
+            };
+            
+            notificationSocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                logActivity(`🔔 Notification: ${data.type}`, data);
+                
+                if (data.type === 'new_notification' || data.type === 'notification') {
+                    showNotification(data.title || 'Notification', data.message);
+                }
+            };
+            
+            notificationSocket.onclose = function(event) {
+                status.textContent = 'Disconnected';
+                status.className = 'connection-status disconnected';
+                logActivity('❌ Notifications disconnected');
+            };
+            
+            notificationSocket.onerror = function(error) {
+                logActivity('🚫 Notification WebSocket error: ' + error);
+            };
+        }
+        
+        // Disconnect functions
+        function disconnectSeats() {
+            if (seatSocket) {
+                seatSocket.close();
+                seatSocket = null;
+            }
+        }
+        
+        function disconnectNotifications() {
+            if (notificationSocket) {
+                notificationSocket.close();
+                notificationSocket = null;
+            }
+        }
+        
+        // Utility functions
+        function selectRandomSeats() {
+            const available = document.querySelectorAll('.seat.available');
+            const count = Math.min(Math.floor(Math.random() * 4) + 1, available.length);
+            
+            for (let i = 0; i < count; i++) {
+                const randomSeat = available[Math.floor(Math.random() * available.length)];
+                toggleSeat(randomSeat.dataset.row, parseInt(randomSeat.dataset.number));
+            }
+        }
+        
+        function releaseAllSeats() {
+            selectedSeats.forEach(seatKey => {
+                const row = seatKey[0];
+                const number = parseInt(seatKey.slice(1));
+                const seatElement = document.querySelector(`[data-row="${row}"][data-number="${number}"]`);
+                
+                if (seatElement && seatElement.classList.contains('selected')) {
+                    toggleSeat(row, number);
+                }
+            });
+        }
+        
+        function simulateBooking() {
+            // Simulate booking some random seats
+            const available = document.querySelectorAll('.seat.available');
+            const count = Math.min(2, available.length);
+            
+            for (let i = 0; i < count; i++) {
+                const randomSeat = available[Math.floor(Math.random() * available.length)];
+                randomSeat.classList.remove('available');
+                randomSeat.classList.add('booked');
+            }
+            
+            showNotification('Booking Confirmed!', 'Your seats have been successfully booked.');
+            updateStats();
+        }
+        
+        function sendTestNotification() {
+            const messages = [
+                'Your booking has been confirmed!',
+                'Payment successful - tickets sent to email',
+                'Showtime reminder: 30 minutes until your movie starts',
+                'Special offer: 20% off your next booking!',
+                'New movies available for booking'
+            ];
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            showNotification('Test Notification', randomMessage);
+        }
+        
+        function showNotification(title, message) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `<strong>${title}</strong><br>${message}`;
+            
+            container.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+        
+        function clearNotifications() {
+            document.getElementById('notifications').innerHTML = '';
+        }
+        
+        function logActivity(message, data = null) {
+            const log = document.getElementById('activityLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let logText = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logText += `\n${JSON.stringify(data, null, 2)}`;
+            }
+            
+            entry.textContent = logText;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('activityLog').innerHTML = '';
+        }
+        
+        function updateStats() {
+            const available = document.querySelectorAll('.seat.available').length;
+            const selected = document.querySelectorAll('.seat.selected').length;
+            const booked = document.querySelectorAll('.seat.booked').length;
+            
+            document.getElementById('availableSeats').textContent = available;
+            document.getElementById('selectedSeats').textContent = selected;
+            document.getElementById('activeBookings').textContent = booked;
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            initSeatMap();
+            updateStats();
+            logActivity('🚀 BookMyMovie Real-time Demo initialized');
+        };
+    </script>
+</body>
+</html>

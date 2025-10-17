@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookMyMovie Microservice Demo</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; }
+        .service-status { font-size: 0.75rem; padding: 4px 8px; border-radius: 9999px; margin-left: 8px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- 1. Global State and Microservice Configuration -->
+    <script>
+        // --- Microservice Configuration (Crucial for connectivity) ---
+        // ADDED NOTIFICATION SERVICE ON PORT 8009
+        const SERVICE_URLS = {
+            CATALOG: "http://127.0.0.1:8005/v1/catalog",
+            AUTH: "http://127.0.0.1:8006/v1/auth",
+            BOOKING: "http://127.0.0.1:8007/v1",
+            PAYMENT: "http://127.0.0.1:8008/v1/payments",
+            NOTIFICATION: "http://127.0.0.1:8009/v1/notifications" // Note: Base URL for health check
+        };
+        const SERVICE_PORTS = {
+            CATALOG: 8005, AUTH: 8006, BOOKING: 8007, PAYMENT: 8008, NOTIFICATION: 8009
+        };
+
+        // --- Application State ---
+        let appState = {
+            page: 'home', // 'home', 'details', 'booking', 'success'
+            movies: [],
+            selectedMovie: null,
+            selectedShowtime: null,
+            currentHold: null, // Stores the SeatHoldRecord after placing a hold
+            user: {
+                id: null,
+                token: null,
+                name: 'Guest'
+            },
+            view: {
+                movieDetails: null, // Full movie object for detail view
+                showtimes: [], // Showtimes for the selected movie
+                seats: [], // Mock seat structure for booking
+            },
+            error: null,
+            message: null,
+            isLoading: false,
+        };
+        
+        // Mock seats data (A1-A10, B1-B10, etc.)
+        function generateMockSeats(rows = 5, seatsPerRow = 10) {
+            const letters = 'ABCDEFGHIJ';
+            let seats = [];
+            for (let r = 0; r < rows; r++) {
+                for (let s = 1; s <= seatsPerRow; s++) {
+                    seats.push({
+                        id: `${letters[r]}${s}`,
+                        status: Math.random() < 0.2 ? 'booked' : 'available', // Mock some booked seats
+                        selected: false
+                    });
+                }
+            }
+            return seats;
+        }
+
+        // --- Core Utility Functions ---
+
+        /** Updates the state and re-renders the UI. */
+        function updateUI(newState = {}) {
+            appState = { ...appState, ...newState };
+            renderApp();
+            // Clear transient messages/errors
+            appState.message = null;
+            appState.error = null;
+        }
+
+        /** Clears the user's local session and state. */
+        function logout() {
+            localStorage.removeItem('userAuth');
+            updateUI({ 
+                user: { id: null, token: null, name: 'Guest' },
+                page: 'home' 
+            });
+            showMessage("You have been successfully logged out.", "success");
+        }
+
+        /** Utility for fetching data from microservices with error handling. */
+        async function serviceFetch(serviceKey, endpoint, options = {}) {
+            // Check if the endpoint is a full URL (like for NOTIFICATION health check) or needs concatenation
+            const url = endpoint.startsWith('http') ? endpoint : `${SERVICE_URLS[serviceKey]}${endpoint}`;
+            
+            // Add Authorization header if a token exists
+            if (appState.user.token) {
+                options.headers = {
+                    'Authorization': `Bearer ${appState.user.token}`,
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                };
+            } else if (options.body) {
+                options.headers = { 'Content-Type': 'application/json', ...options.headers };
+            }
+
+            try {
+                const response = await fetch(url, options);
+                
+                if (response.status === 401) {
+                    logout();
+                    showMessage("Your session expired. Please log in again.", "error");
+                    return null;
+                }
+
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({ detail: response.statusText }));
+                    throw new Error(errorBody.detail || 'Service request failed.');
+                }
+                
+                if (response.status === 204) return null; // No content
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching from ${serviceKey} service:`, error);
+                const errorMessage = error.message.includes("Failed to fetch") 
+                    ? `Could not connect to ${serviceKey} Service on port ${SERVICE_PORTS[serviceKey]}. Is the service running?`
+                    : error.message;
+                
+                updateUI({ error: errorMessage, isLoading: false });
+                return null;
+            }
+        }
+
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `
+                <div class="p-3 mb-4 rounded-lg shadow-lg text-sm ${type === 'error' ? 'bg-red-100 text-red-800' : type === 'success' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                    ${text}
+                </div>
+            `;
+            setTimeout(() => container.innerHTML = '', 5000); // Clear message after 5 seconds
+        }
+
+        // --- Data Fetching Logic (Service Integrations) ---
+
+        /** Fetch all movies from the Catalog Service */
+        async function fetchMovies() {
+            updateUI({ isLoading: true });
+            const data = await serviceFetch('CATALOG', '/movies');
+            if (data) {
+                updateUI({ movies: data, isLoading: false });
+            } else {
+                updateUI({ isLoading: false });
+            }
+        }
+
+        /** Fetch details and showtimes for a specific movie */
+        async function fetchMovieDetails(movie) {
+            updateUI({ isLoading: true, selectedMovie: movie });
+            
+            // 1. Fetch Showtimes
+            const showtimes = await serviceFetch('CATALOG', `/showtimes/${movie.movie_id}`);
+            
+            if (showtimes) {
+                updateUI({ 
+                    view: { ...appState.view, showtimes: showtimes }, 
+                    page: 'details', 
+                    isLoading: false 
+                });
+            } else {
+                updateUI({ 
+                    view: { ...appState.view, showtimes: [] }, // Show movie details even if no showtimes found
+                    page: 'details', 
+                    isLoading: false 
+                });
+                showMessage("No showtimes available for this movie.", "info");
+            }
+        }
+
+        /** Initiate the seat holding process */
+        async function initiateHold() {
+            if (!appState.user.id) {
+                showMessage("You must be logged in to book tickets.", "error");
+                toggleAuthModal('login');
+                return;
+            }
+            
+            const selectedSeats = appState.view.seats.filter(s => s.selected).map(s => s.id);
+
+            if (selectedSeats.length === 0) {
+                showMessage("Please select at least one seat.", "error");
+                return;
+            }
+
+            updateUI({ isLoading: true });
+            
+            const holdRequest = {
+                showtime_id: appState.selectedShowtime.showtime_id,
+                seat_ids: selectedSeats,
+                user_id: appState.user.id
+            };
+
+            const data = await serviceFetch('BOOKING', '/holds', {
+                method: 'POST',
+                body: JSON.stringify(holdRequest)
+            });
+
+            if (data) {
+                updateUI({ 
+                    currentHold: data,
+                    page: 'payment',
+                    isLoading: false 
+                });
+                showMessage(data.message, "success");
+            } else {
+                // Error handled by serviceFetch
+                updateUI({ isLoading: false });
+            }
+        }
+        
+        /** Process the payment for the seat hold */
+        async function processPayment(paymentToken) {
+            updateUI({ isLoading: true });
+
+            const paymentData = {
+                hold_id: appState.currentHold.hold_id,
+                user_id: appState.user.id,
+                // Mock total amount (Price * number of seats)
+                amount: appState.selectedShowtime.price_per_seat * appState.view.seats.filter(s => s.selected).length,
+                payment_token: paymentToken // Mock token
+            };
+
+            const paymentResult = await serviceFetch('PAYMENT', '/process', {
+                method: 'POST',
+                body: JSON.stringify(paymentData)
+            });
+
+            if (paymentResult) {
+                if (paymentResult.status === "SUCCESS") {
+                    // Step 3: Call the Booking Service to CONFIRM the hold
+                    await confirmBooking(paymentResult.transaction_id);
+                } else {
+                    showMessage(`Payment failed: ${paymentResult.message}`, "error");
+                    updateUI({ isLoading: false, currentHold: null, page: 'details' }); // Send user back to details
+                }
+            } else {
+                // Error handled by serviceFetch
+                updateUI({ isLoading: false });
+            }
+        }
+        
+        /** Confirm the booking after payment success */
+        async function confirmBooking(transactionId) {
+            const confirmData = {
+                hold_id: appState.currentHold.hold_id,
+                transaction_id: transactionId,
+                amount_paid: appState.selectedShowtime.price_per_seat * appState.view.seats.filter(s => s.selected).length,
+                payment_method: "Mock Card"
+            };
+
+            const bookingConfirmation = await serviceFetch('BOOKING', '/bookings/confirm', {
+                method: 'POST',
+                body: JSON.stringify(confirmData)
+            });
+
+            if (bookingConfirmation) {
+                updateUI({
+                    page: 'success',
+                    currentHold: bookingConfirmation, // Overwrite with final booking details
+                    isLoading: false
+                });
+                showMessage("Booking confirmed successfully! Check your backend logs for notification service activity.", "success");
+            } else {
+                showMessage("Payment succeeded, but booking confirmation failed. Contact support.", "error");
+                updateUI({ isLoading: false, currentHold: null, page: 'home' }); 
+            }
+        }
+
+        // --- Authentication Logic ---
+
+        /** Handle user registration/login */
+        async function handleAuth(type, formData) {
+            updateUI({ isLoading: true });
+            
+            const endpoint = type === 'register' ? '/register' : '/login';
+            
+            const data = await serviceFetch('AUTH', endpoint, {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+
+            if (data) {
+                if (type === 'register') {
+                    // Registration returns UserProfile, now proceed to log in
+                    const loginData = { email: formData.email, password: formData.password };
+                    await handleAuth('login', loginData);
+                } else {
+                    // Login returns AuthToken
+                    const user = {
+                        id: data.user_id,
+                        token: data.access_token,
+                        name: formData.email.split('@')[0] // Use email prefix as mock name
+                    };
+                    
+                    localStorage.setItem('userAuth', JSON.stringify(user));
+                    updateUI({ user: user, isLoading: false });
+                    hideAuthModal();
+                    showMessage(`Welcome back, ${user.name}!`, "success");
+                }
+            } else {
+                // Error handled by serviceFetch
+                updateUI({ isLoading: false });
+            }
+        }
+        
+        // --- UI Rendering Functions ---
+
+        /** Renders the entire application based on the current state. */
+        function renderApp() {
+            const app = document.getElementById('app');
+            const userDisplay = document.getElementById('user-display');
+            
+            // 1. Update Header/User status
+            userDisplay.innerHTML = `
+                <span class="text-gray-600 mr-4 hidden sm:inline">Welcome, ${appState.user.name}</span>
+                ${appState.user.id 
+                    ? `<button onclick="logout()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition duration-150">Logout</button>`
+                    : `<button onclick="toggleAuthModal('login')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-150">Login / Register</button>`
+                }
+            `;
+            
+            // 2. Clear content and handle loading/error states
+            app.innerHTML = '';
+            document.getElementById('loading-overlay').style.display = appState.isLoading ? 'flex' : 'none';
+            document.getElementById('error-container').innerHTML = appState.error 
+                ? `<div class="p-4 mb-4 bg-red-500 text-white font-semibold rounded-lg shadow-xl text-center">${appState.error}</div>` 
+                : '';
+
+            // 3. Render the correct page view
+            switch (appState.page) {
+                case 'details':
+                    renderMovieDetails(app);
+                    break;
+                case 'booking':
+                    renderBookingView(app);
+                    break;
+                case 'payment':
+                    renderPaymentView(app);
+                    break;
+                case 'success':
+                    renderSuccessView(app);
+                    break;
+                case 'home':
+                default:
+                    renderHomeView(app);
+                    break;
+            }
+        }
+
+        /** Renders the list of all available movies. */
+        function renderHomeView(container) {
+            container.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2">Now Playing</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    ${appState.movies.map(movie => `
+                        <div class="bg-white rounded-xl shadow-xl overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 cursor-pointer" 
+                             onclick="fetchMovieDetails(${JSON.stringify(movie).replace(/"/g, '&quot;')})">
+                            <img src="${movie.poster_url}" onerror="this.onerror=null;this.src='https://placehold.co/400x600/6b7280/ffffff?text=${movie.title.split(' ').join('+')}'" alt="${movie.title}" class="w-full h-auto object-cover aspect-[2/3]">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-lg truncate">${movie.title}</h3>
+                                <p class="text-sm text-gray-500">${movie.genre} | ${movie.duration_minutes} min</p>
+                                <span class="inline-block mt-2 px-3 py-1 text-xs font-bold text-white bg-indigo-600 rounded-full">${movie.rating} / 10</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        /** Renders the details of a single movie and its showtimes. */
+        function renderMovieDetails(container) {
+            const movie = appState.selectedMovie;
+            if (!movie) return;
+
+            container.innerHTML = `
+                <button onclick="updateUI({page: 'home', selectedMovie: null})" class="flex items-center text-blue-600 hover:text-blue-800 mb-6 font-semibold">
+                    &larr; Back to Movies
+                </button>
+                
+                <div class="bg-white rounded-xl shadow-2xl p-6 lg:p-8 flex flex-col lg:flex-row gap-8">
+                    <img src="${movie.poster_url}" onerror="this.onerror=null;this.src='https://placehold.co/400x600/6b7280/ffffff?text=${movie.title.split(' ').join('+')}'" alt="${movie.title}" class="w-full lg:w-72 h-auto object-cover rounded-lg shadow-lg aspect-[2/3]">
+                    
+                    <div class="flex-grow">
+                        <h1 class="text-4xl font-extrabold text-gray-900 mb-2">${movie.title}</h1>
+                        <p class="text-xl text-indigo-600 font-medium mb-4">${movie.genre} | ${movie.duration_minutes} min | ${movie.rating} / 10</p>
+                        <p class="text-gray-700 leading-relaxed mb-6">${movie.description}</p>
+
+                        <h3 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">Available Showtimes</h3>
+                        ${appState.view.showtimes.length > 0 
+                            ? appState.view.showtimes.map(st => `
+                                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-md mb-3">
+                                    <div>
+                                        <p class="font-semibold text-lg text-gray-800">${st.theater_name}</p>
+                                        <p class="text-sm text-gray-600">${new Date(st.start_time).toLocaleString()}</p>
+                                        <p class="text-sm text-gray-500">Seats Available: ${st.total_seats}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xl font-bold text-green-700">$${st.price_per_seat.toFixed(2)}</p>
+                                        <button onclick="selectShowtime(${JSON.stringify(st).replace(/"/g, '&quot;')})" 
+                                                class="mt-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition duration-150">
+                                            Select Seats
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<p class="text-gray-500">No showtimes currently scheduled.</p>'
+                        }
+                    </div>
+                </div>
+            `;
+        }
+        
+        /** Selects a showtime and moves to the seat selection view. */
+        function selectShowtime(showtime) {
+            updateUI({
+                selectedShowtime: showtime,
+                view: { ...appState.view, seats: generateMockSeats() }, // Load mock seats
+                page: 'booking'
+            });
+        }
+        
+        /** Toggles the selection status of a seat. */
+        function toggleSeat(seatId) {
+            const newSeats = appState.view.seats.map(seat => {
+                if (seat.id === seatId) {
+                    if (seat.status === 'booked') return seat; // Cannot select booked seats
+                    return { ...seat, selected: !seat.selected };
+                }
+                return seat;
+            });
+            updateUI({ view: { ...appState.view, seats: newSeats } });
+        }
+        
+        /** Renders the seat selection and hold initiation view. */
+        function renderBookingView(container) {
+            const movie = appState.selectedMovie;
+            const showtime = appState.selectedShowtime;
+            if (!movie || !showtime) return;
+
+            const selectedSeats = appState.view.seats.filter(s => s.selected);
+            const totalPrice = (selectedSeats.length * showtime.price_per_seat).toFixed(2);
+            
+            container.innerHTML = `
+                <button onclick="fetchMovieDetails(appState.selectedMovie)" class="flex items-center text-blue-600 hover:text-blue-800 mb-6 font-semibold">
+                    &larr; Back to Showtimes
+                </button>
+                
+                <div class="bg-white rounded-xl shadow-2xl p-6 lg:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">${movie.title}</h2>
+                    <p class="text-xl text-gray-600 mb-6">${showtime.theater_name} | ${new Date(showtime.start_time).toLocaleString()} | $${showtime.price_per_seat.toFixed(2)} per seat</p>
+
+                    <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Select Your Seats</h3>
+                    
+                    <div class="flex justify-center mb-8">
+                        <div class="w-full max-w-2xl bg-gray-200 p-4 rounded-lg shadow-inner">
+                            <div class="text-center text-white bg-gray-700 py-2 mb-4 rounded-lg font-bold">SCREEN</div>
+                            <div class="grid grid-cols-10 gap-2 justify-center" id="seat-grid">
+                                <!-- Seat buttons will go here -->
+                                ${appState.view.seats.map(seat => `
+                                    <button 
+                                        onclick="toggleSeat('${seat.id}')"
+                                        class="aspect-square w-full rounded-md font-bold text-xs transition duration-150
+                                            ${seat.status === 'booked' ? 'bg-red-500 text-white cursor-not-allowed opacity-50' :
+                                            seat.selected ? 'bg-indigo-600 text-white shadow-lg transform scale-105' :
+                                            'bg-green-300 hover:bg-green-400 text-gray-800 shadow-sm'}"
+                                        ${seat.status === 'booked' ? 'disabled' : ''}>
+                                        ${seat.id}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Summary -->
+                    <div class="mt-8 pt-4 border-t-2">
+                        <h3 class="text-xl font-bold mb-3">Booking Summary</h3>
+                        <p>Seats: <span class="font-semibold text-gray-700">${selectedSeats.map(s => s.id).join(', ') || 'None selected'}</span></p>
+                        <p>Quantity: <span class="font-semibold text-gray-700">${selectedSeats.length}</span></p>
+                        <p class="text-2xl font-extrabold mt-2">Total Price: <span class="text-indigo-600">$${totalPrice}</span></p>
+                        
+                        <button onclick="initiateHold()" 
+                                ${selectedSeats.length === 0 ? 'disabled' : ''}
+                                class="mt-6 w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white text-lg font-bold rounded-xl shadow-xl transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Proceed to Payment (Hold Seats)
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /** Renders the mock payment view. */
+        function renderPaymentView(container) {
+            const movie = appState.selectedMovie;
+            const showtime = appState.selectedShowtime;
+            const selectedSeats = appState.view.seats.filter(s => s.selected);
+            const totalPrice = (selectedSeats.length * showtime.price_per_seat).toFixed(2);
+
+            container.innerHTML = `
+                <div class="max-w-xl mx-auto bg-white rounded-xl shadow-2xl p-6 lg:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Complete Your Purchase</h2>
+                    <p class="text-lg text-gray-600 mb-6">Hold ID: <span class="font-mono bg-yellow-100 p-1 rounded">${appState.currentHold.hold_id}</span></p>
+                    
+                    <div class="border-t pt-4 mb-6">
+                        <p class="text-xl font-extrabold text-center">Total Amount Due: <span class="text-green-600">$${totalPrice}</span></p>
+                    </div>
+
+                    <form id="payment-form" onsubmit="event.preventDefault(); handlePaymentSubmit(event);">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2" for="cardholder">Cardholder Name</label>
+                            <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="cardholder" value="${appState.user.name}" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2" for="cardnumber">Card Number</label>
+                            <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="cardnumber" placeholder="XXXX XXXX XXXX XXXX" value="4111111111111111" required>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-gray-700 font-semibold mb-2" for="expiry">Expiry</label>
+                                <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="expiry" placeholder="MM/YY" value="12/26" required>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-gray-700 font-semibold mb-2" for="cvc">CVC</label>
+                                <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="cvc" placeholder="CVC" value="123" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white text-xl font-bold rounded-xl shadow-xl transition duration-150">
+                            Pay $${totalPrice}
+                        </button>
+                    </form>
+                    
+                    <button onclick="updateUI({page: 'booking'})" class="mt-4 w-full text-sm text-gray-500 hover:text-gray-700">Cancel and go back to seat selection</button>
+                </div>
+            `;
+        }
+        
+        /** Handles the mock payment form submission. */
+        function handlePaymentSubmit(event) {
+            const token = "MOCK_CARD_TOKEN_123"; // In a real app, this comes from the payment gateway SDK
+            processPayment(token);
+        }
+
+        /** Renders the final success/confirmation page. */
+        function renderSuccessView(container) {
+            const booking = appState.currentHold;
+            const movie = appState.selectedMovie;
+            const showtime = appState.selectedShowtime;
+            
+            if (!booking || !movie || !showtime) return;
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto bg-green-50 border-4 border-green-300 rounded-xl shadow-2xl p-8 text-center">
+                    <svg class="mx-auto h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h1 class="text-4xl font-extrabold text-green-800 mt-4 mb-2">Booking Confirmed!</h1>
+                    <p class="text-xl text-gray-700 mb-6">Your e-ticket has been generated. (Notification sent by 8009 service)</p>
+
+                    <div class="bg-white p-6 rounded-lg shadow-inner text-left">
+                        <div class="flex items-center mb-4 border-b pb-4">
+                            <img src="${movie.poster_url}" onerror="this.onerror=null;this.src='https://placehold.co/100x150/6b7280/ffffff?text=TICKET'" alt="Movie Poster" class="w-16 h-24 object-cover rounded mr-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-900">${movie.title}</h3>
+                                <p class="text-md text-indigo-600">${showtime.theater_name}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <p class="font-bold">Confirmation Ref:</p>
+                            <p class="font-mono text-right text-purple-700">${booking.booking_ref}</p>
+                            
+                            <p class="font-bold">Showtime:</p>
+                            <p class="text-right">${new Date(showtime.start_time).toLocaleString()}</p>
+                            
+                            <p class="font-bold">Seats:</p>
+                            <p class="text-right font-bold text-lg text-red-600">${booking.seats.join(', ')}</p>
+                            
+                            <p class="font-bold">Transaction ID:</p>
+                            <p class="font-mono text-right">${appState.currentHold.transaction_id || 'N/A'}</p>
+                        </div>
+                    </div>
+
+                    <button onclick="updateUI({page: 'home', currentHold: null, selectedShowtime: null, selectedMovie: null})" 
+                            class="mt-8 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl transition duration-150">
+                        Back to Home
+                    </button>
+                </div>
+            `;
+        }
+
+
+        // --- Authentication Modal Functions ---
+
+        /** Toggles the visibility of the authentication modal. */
+        function toggleAuthModal(mode = 'login') {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.remove('hidden');
+            document.getElementById('auth-mode').value = mode;
+            renderAuthForm();
+        }
+
+        /** Hides the authentication modal. */
+        function hideAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        /** Renders the login or register form inside the modal. */
+        function renderAuthForm() {
+            const mode = document.getElementById('auth-mode').value;
+            const formContainer = document.getElementById('auth-form-container');
+            const isLogin = mode === 'login';
+
+            formContainer.innerHTML = `
+                <h3 class="text-2xl font-bold mb-6 text-gray-900">${isLogin ? 'Login to Your Account' : 'Create an Account'}</h3>
+                
+                <form id="auth-form" onsubmit="event.preventDefault(); submitAuthForm('${mode}')">
+                    ${!isLogin ? `
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2" for="name">Name</label>
+                            <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="auth-name" required>
+                        </div>
+                    ` : ''}
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-semibold mb-2" for="email">Email</label>
+                        <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="email" id="auth-email" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2" for="password">Password</label>
+                        <input class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" type="password" id="auth-password" required>
+                    </div>
+                    <button type="submit" class="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition duration-150">
+                        ${isLogin ? 'Login' : 'Register'}
+                    </button>
+                </form>
+                
+                <p class="mt-4 text-sm text-center">
+                    ${isLogin ? 'Need an account?' : 'Already have an account?'}
+                    <button onclick="document.getElementById('auth-mode').value = '${isLogin ? 'register' : 'login'}'; renderAuthForm();" 
+                            class="text-indigo-600 hover:text-indigo-800 font-semibold transition duration-150">
+                        ${isLogin ? 'Register here' : 'Login here'}
+                    </button>
+                </p>
+            `;
+        }
+
+        /** Submits the login or registration form data. */
+        function submitAuthForm(type) {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            let formData = { email, password };
+
+            if (type === 'register') {
+                formData.name = document.getElementById('auth-name').value;
+            }
+
+            handleAuth(type, formData);
+        }
+        
+        // --- Initialization ---
+
+        function initApp() {
+            // Load user data from local storage
+            const savedAuth = localStorage.getItem('userAuth');
+            if (savedAuth) {
+                try {
+                    const user = JSON.parse(savedAuth);
+                    appState.user = user;
+                } catch (e) {
+                    console.error("Failed to parse saved auth data:", e);
+                    localStorage.removeItem('userAuth');
+                }
+            }
+            
+            fetchMovies(); // Start by fetching movies
+            renderApp();
+            
+            // Check service status on load
+            checkServiceStatus();
+        }
+        
+        // --- Service Status Checker ---
+        async function checkServiceStatus() {
+            const statusContainer = document.getElementById('service-status-container');
+            // UPDATED: Added NOTIFICATION service
+            const services = ['CATALOG', 'AUTH', 'BOOKING', 'PAYMENT', 'NOTIFICATION'];
+            let statusHTML = '';
+
+            for (const service of services) {
+                let status = 'Error';
+                let color = 'bg-red-500';
+
+                try {
+                    // Use a simple, non-blocking check for each service
+                    const checkUrl = service === 'CATALOG' 
+                        ? `${SERVICE_URLS.CATALOG}/movies` 
+                        : SERVICE_URLS[service].replace(/\/v1\/.*$/, '/health'); // Use /health for all others
+
+                    const response = await fetch(checkUrl, { method: 'GET', signal: AbortSignal.timeout(2000) }); // Timeout after 2s
+                    
+                    // FastAPI /health usually returns 200/204 or we check if the base path is accessible (404/401 is okay)
+                    if (response.ok || response.status === 404 || response.status === 401) {
+                        status = 'OK';
+                        color = 'bg-green-500';
+                    } else {
+                        status = 'Issue';
+                        color = 'bg-yellow-500';
+                    }
+                } catch (e) {
+                    // This catches network errors (Failed to fetch) or timeout
+                    status = 'Down';
+                    color = 'bg-red-500';
+                }
+
+                statusHTML += `
+                    <div class="flex items-center text-sm mr-4">
+                        <span class="font-semibold text-gray-700">${service} (${SERVICE_PORTS[service]}):</span>
+                        <span class="service-status ${color} text-white">${status}</span>
+                    </div>
+                `;
+            }
+            statusContainer.innerHTML = statusHTML;
+        }
+
+        window.onload = initApp;
+    </script>
+
+    <!-- 2. Main Application Structure -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <!-- CUSTOM LOGO + BRAND NAME -->
+                <div class="flex items-center cursor-pointer" onclick="updateUI({page: 'home'})">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white text-xl font-bold mr-3 shadow-lg">
+                        🎬
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-indigo-700 leading-tight">
+                            BookMyMovie
+                        </h1>
+                        <p class="text-xs text-gray-500 -mt-1 font-medium">Book Fast Feel First</p>
+                    </div>
+                </div>
+                <div id="service-status-container" class="ml-8 flex items-center text-xs">
+                    <!-- Service status will be inserted here -->
+                </div>
+            </div>
+            
+            <div id="user-display" class="flex items-center">
+                <!-- User buttons/status will be rendered here by JS -->
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Global Message/Error Container -->
+        <div id="message-container"></div>
+        <div id="error-container"></div>
+        
+        <!-- Application Content Container -->
+        <div id="app" class="mt-4">
+            <!-- Content will be rendered here by renderApp() -->
+        </div>
+        
+    </main>
+
+    <!-- 3. Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="p-6 bg-white rounded-xl shadow-2xl flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-lg font-semibold text-gray-800">Processing request...</span>
+        </div>
+    </div>
+
+    <!-- 4. Authentication Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-40 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md mx-4 relative">
+            <button onclick="hideAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <input type="hidden" id="auth-mode" value="login">
+            <div id="auth-form-container">
+                <!-- Login/Register form will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
