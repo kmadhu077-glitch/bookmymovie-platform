@@ -1,14 +1,34 @@
 {
   "version": 2,
   "functions": {
-    "server.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   },
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/frontend/admin.html"
+    },
+    {
+      "source": "/booking",
+      "destination": "/frontend/booking.html"
+    },
+    {
+      "source": "/analytics",
+      "destination": "/frontend/analytics.html"
+    },
+    {
       "source": "/(.*)",
-      "destination": "/server.js"
+      "destination": "/frontend/$1"
     }
   ]
 }
