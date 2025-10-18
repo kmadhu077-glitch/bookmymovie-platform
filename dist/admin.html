@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookMyMovie - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-transition { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Admin App Container -->
+    <div id="admin-app" class="min-h-screen flex">
+        
+        <!-- Sidebar -->
+        <div id="sidebar" class="bg-indigo-900 text-white w-64 sidebar-transition">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-film mr-3"></i>
+                    Admin Panel
+                </h2>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="mt-6">
+                <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#" onclick="showSection('movies')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-video mr-3"></i>
+                    Movie Management
+                </a>
+                <a href="#" onclick="showSection('theaters')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-building mr-3"></i>
+                    Theater Management
+                </a>
+                <a href="#" onclick="showSection('users')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-users mr-3"></i>
+                    User Management
+                </a>
+                <a href="#" onclick="showSection('bookings')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-ticket-alt mr-3"></i>
+                    Bookings
+                </a>
+                <a href="#" onclick="showSection('analytics')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Analytics
+                </a>
+                <a href="#" onclick="showSection('settings')" class="nav-item flex items-center px-6 py-3 hover:bg-indigo-800 transition-colors">
+                    <i class="fas fa-cog mr-3"></i>
+                    Settings
+                </a>
+            </nav>
+
+            <!-- Admin User Info -->
+            <div class="absolute bottom-0 w-64 p-6 border-t border-indigo-800">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium" id="admin-name">Admin User</p>
+                        <p class="text-sm text-indigo-300">Administrator</p>
+                    </div>
+                </div>
+                <button onclick="adminLogout()" class="mt-4 w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button onclick="toggleSidebar()" class="lg:hidden mr-4">
+                            <i class="fas fa-bars text-gray-600"></i>
+                        </button>
+                        <h1 id="page-title" class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+                    </div>
+                    
+                    <!-- Header Actions -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <div class="relative">
+                            <button class="p-2 text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <button onclick="showAddMovieModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Add Movie
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="flex-1 p-6 overflow-auto">
+                
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="content-section">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-blue-100 rounded-full">
+                                    <i class="fas fa-video text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Total Movies</p>
+                                    <p class="text-2xl font-bold text-gray-900" id="total-movies">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-green-100 rounded-full">
+                                    <i class="fas fa-users text-green-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Total Users</p>
+                                    <p class="text-2xl font-bold text-gray-900" id="total-users">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-yellow-100 rounded-full">
+                                    <i class="fas fa-ticket-alt text-yellow-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Total Bookings</p>
+                                    <p class="text-2xl font-bold text-gray-900" id="total-bookings">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-purple-100 rounded-full">
+                                    <i class="fas fa-dollar-sign text-purple-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600">Revenue (Today)</p>
+                                    <p class="text-2xl font-bold text-gray-900" id="total-revenue">$0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <h3 class="text-lg font-semibold mb-4">Revenue Trend</h3>
+                            <canvas id="revenue-chart" width="400" height="200"></canvas>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <h3 class="text-lg font-semibold mb-4">Popular Movies</h3>
+                            <canvas id="movies-chart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Movies Management Section -->
+                <div id="movies-section" class="content-section hidden">
+                    <div class="bg-white rounded-lg shadow-sm border">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold">Movie Management</h3>
+                                <button onclick="showAddMovieModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-plus mr-2"></i>Add New Movie
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Movies Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Movie</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Genre</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movies-table-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Movies will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections will be added here -->
+                <div id="theaters-section" class="content-section hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <h3 class="text-lg font-semibold">Theater Management</h3>
+                        <p class="text-gray-600 mt-2">Manage theaters and showtimes</p>
+                    </div>
+                </div>
+
+                <div id="users-section" class="content-section hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <h3 class="text-lg font-semibold">User Management</h3>
+                        <p class="text-gray-600 mt-2">Manage user accounts and permissions</p>
+                    </div>
+                </div>
+
+                <div id="bookings-section" class="content-section hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <h3 class="text-lg font-semibold">Booking Management</h3>
+                        <p class="text-gray-600 mt-2">View and manage all bookings</p>
+                    </div>
+                </div>
+
+                <div id="analytics-section" class="content-section hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <h3 class="text-lg font-semibold">Analytics & Reports</h3>
+                        <p class="text-gray-600 mt-2">Detailed analytics and reporting</p>
+                    </div>
+                </div>
+
+                <div id="settings-section" class="content-section hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <h3 class="text-lg font-semibold">System Settings</h3>
+                        <p class="text-gray-600 mt-2">Configure system settings</p>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Movie Modal -->
+    <div id="add-movie-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Add New Movie</h3>
+                        <button onclick="hideAddMovieModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="add-movie-form" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                            <input type="text" id="movie-title" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Genre</label>
+                            <select id="movie-genre" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                <option value="">Select Genre</option>
+                                <option value="Action">Action</option>
+                                <option value="Comedy">Comedy</option>
+                                <option value="Drama">Drama</option>
+                                <option value="Horror">Horror</option>
+                                <option value="Romance">Romance</option>
+                                <option value="Sci-Fi">Sci-Fi</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                            <input type="number" id="movie-duration" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Rating (1-10)</label>
+                            <input type="number" id="movie-rating" min="1" max="10" step="0.1" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Poster URL</label>
+                            <input type="url" id="movie-poster" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea id="movie-description" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" onclick="hideAddMovieModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            Add Movie
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin JavaScript -->
+    <script>
+        // Admin Panel Configuration
+        const ADMIN_API_BASE = 'http://127.0.0.1:8010/v1/admin';
+        let adminToken = localStorage.getItem('adminToken');
+        let currentSection = 'dashboard';
+
+        // Initialize Admin Panel
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAuth();
+            if (adminToken) {
+                loadDashboardData();
+            }
+        });
+
+        // Authentication Functions
+        function checkAdminAuth() {
+            if (!adminToken) {
+                showLoginModal();
+            } else {
+                // Validate token with server
+                validateAdminToken();
+            }
+        }
+
+        function validateAdminToken() {
+            // Add token validation logic here
+            console.log('Validating admin token...');
+        }
+
+        function showLoginModal() {
+            // Create login modal (simplified for demo)
+            document.body.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+                        <h2 class="text-2xl font-bold text-center mb-6">Admin Login</h2>
+                        <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                <input type="text" id="admin-username" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <input type="password" id="admin-password" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                                Login
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+
+            try {
+                const response = await fetch(`${ADMIN_API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    location.reload(); // Reload to show admin panel
+                } else {
+                    alert('Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                // For demo, allow mock login
+                if (username === 'admin' && password === 'admin123') {
+                    adminToken = 'MOCK_ADMIN_TOKEN';
+                    localStorage.setItem('adminToken', adminToken);
+                    location.reload();
+                } else {
+                    alert('Invalid credentials');
+                }
+            }
+        }
+
+        // Navigation Functions
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hidden'));
+            
+            // Show selected section
+            document.getElementById(`${section}-section`).classList.remove('hidden');
+            
+            // Update page title
+            const titles = {
+                dashboard: 'Dashboard',
+                movies: 'Movie Management',
+                theaters: 'Theater Management',
+                users: 'User Management',
+                bookings: 'Booking Management',
+                analytics: 'Analytics',
+                settings: 'Settings'
+            };
+            document.getElementById('page-title').textContent = titles[section];
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('bg-indigo-800'));
+            event.target.classList.add('bg-indigo-800');
+            
+            currentSection = section;
+            
+            // Load section-specific data
+            if (section === 'movies') {
+                loadMovies();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // Data Loading Functions
+        async function loadDashboardData() {
+            try {
+                // Load dashboard statistics
+                const analyticsResponse = await fetch(`${ADMIN_API_BASE}/analytics/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (analyticsResponse.ok) {
+                    const analytics = await analyticsResponse.json();
+                    updateDashboardStats(analytics);
+                } else {
+                    // Mock data for demo
+                    updateDashboardStats({
+                        total_movies: 25,
+                        total_users: 1250,
+                        total_bookings: 856,
+                        daily_revenue: 15420
+                    });
+                }
+
+                // Initialize charts
+                initializeCharts();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                // Use mock data
+                updateDashboardStats({
+                    total_movies: 25,
+                    total_users: 1250,
+                    total_bookings: 856,
+                    daily_revenue: 15420
+                });
+                initializeCharts();
+            }
+        }
+
+        function updateDashboardStats(stats) {
+            document.getElementById('total-movies').textContent = stats.total_movies || 0;
+            document.getElementById('total-users').textContent = stats.total_users || 0;
+            document.getElementById('total-bookings').textContent = stats.total_bookings || 0;
+            document.getElementById('total-revenue').textContent = `$${(stats.daily_revenue || 0).toLocaleString()}`;
+        }
+
+        async function loadMovies() {
+            try {
+                const response = await fetch(`${ADMIN_API_BASE}/movies`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (response.ok) {
+                    const movies = await response.json();
+                    displayMovies(movies);
+                } else {
+                    // Mock movies for demo
+                    displayMovies([
+                        { movie_id: 1, title: 'Avengers: Endgame', genre: 'Action', duration_minutes: 180, rating: 8.4, status: 'active' },
+                        { movie_id: 2, title: 'Inception', genre: 'Sci-Fi', duration_minutes: 148, rating: 8.8, status: 'active' },
+                        { movie_id: 3, title: 'The Dark Knight', genre: 'Action', duration_minutes: 152, rating: 9.0, status: 'active' }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error loading movies:', error);
+            }
+        }
+
+        function displayMovies(movies) {
+            const tbody = document.getElementById('movies-table-body');
+            tbody.innerHTML = movies.map(movie => `
+                <tr>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-12 w-12">
+                                <img class="h-12 w-12 rounded object-cover" src="${movie.poster_url || 'https://via.placeholder.com/48x72'}" alt="">
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${movie.title}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${movie.genre}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${movie.duration_minutes} min</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${movie.rating}/10</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${movie.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${movie.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <button onclick="editMovie(${movie.movie_id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteMovie(${movie.movie_id})" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Modal Functions
+        function showAddMovieModal() {
+            document.getElementById('add-movie-modal').classList.remove('hidden');
+        }
+
+        function hideAddMovieModal() {
+            document.getElementById('add-movie-modal').classList.add('hidden');
+            document.getElementById('add-movie-form').reset();
+        }
+
+        // Chart Functions
+        function initializeCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenue-chart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [12000, 15000, 18000, 14000, 20000, 25000, 22000],
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Movies Chart
+            const moviesCtx = document.getElementById('movies-chart').getContext('2d');
+            new Chart(moviesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi'],
+                    datasets: [{
+                        data: [30, 25, 20, 15, 10],
+                        backgroundColor: [
+                            'rgb(99, 102, 241)',
+                            'rgb(34, 197, 94)',
+                            'rgb(251, 191, 36)',
+                            'rgb(239, 68, 68)',
+                            'rgb(168, 85, 247)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        // Movie Management Functions
+        document.getElementById('add-movie-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const movieData = {
+                title: document.getElementById('movie-title').value,
+                genre: document.getElementById('movie-genre').value,
+                duration_minutes: parseInt(document.getElementById('movie-duration').value),
+                rating: parseFloat(document.getElementById('movie-rating').value),
+                poster_url: document.getElementById('movie-poster').value,
+                description: document.getElementById('movie-description').value,
+                status: 'active'
+            };
+
+            try {
+                const response = await fetch(`${ADMIN_API_BASE}/movies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify(movieData)
+                });
+
+                if (response.ok) {
+                    hideAddMovieModal();
+                    loadMovies(); // Reload movies list
+                    alert('Movie added successfully!');
+                } else {
+                    alert('Error adding movie');
+                }
+            } catch (error) {
+                console.error('Error adding movie:', error);
+                alert('Error adding movie');
+            }
+        });
+
+        function editMovie(movieId) {
+            // Implement edit functionality
+            console.log('Edit movie:', movieId);
+        }
+
+        function deleteMovie(movieId) {
+            if (confirm('Are you sure you want to delete this movie?')) {
+                // Implement delete functionality
+                console.log('Delete movie:', movieId);
+            }
+        }
+
+        function adminLogout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
+    </script>
+
+</body>
+</html>

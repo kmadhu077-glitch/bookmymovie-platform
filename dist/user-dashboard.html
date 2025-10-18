@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookMyMovie - User Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Navigation Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="goToMainSite()">
+                        <i class="fas fa-film mr-2"></i>BookMyMovie
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="notifications-btn" class="p-2 text-gray-600 hover:text-gray-900 relative">
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1 hidden">3</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div class="hidden sm:block">
+                            <p class="text-sm font-medium text-gray-900" id="user-name">User Name</p>
+                            <p class="text-xs text-gray-500" id="user-email">user@example.com</p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="userLogout()" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Dashboard Tabs -->
+        <div class="border-b border-gray-200 mb-8">
+            <nav class="-mb-px flex space-x-8">
+                <button onclick="showTab('profile')" id="profile-tab" class="tab-btn py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 tab-active">
+                    <i class="fas fa-user mr-2"></i>Profile
+                </button>
+                <button onclick="showTab('bookings')" id="bookings-tab" class="tab-btn py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-ticket-alt mr-2"></i>My Bookings
+                </button>
+                <button onclick="showTab('payments')" id="payments-tab" class="tab-btn py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-credit-card mr-2"></i>Payment Methods
+                </button>
+                <button onclick="showTab('preferences')" id="preferences-tab" class="tab-btn py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-cog mr-2"></i>Preferences
+                </button>
+                <button onclick="showTab('mobile')" id="mobile-tab" class="tab-btn py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-mobile-alt mr-2"></i>Mobile Login
+                </button>
+            </nav>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profile-content" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Profile Information -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Profile Information</h3>
+                            <button onclick="toggleEditProfile()" id="edit-profile-btn" class="text-indigo-600 hover:text-indigo-800">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                        </div>
+                        
+                        <form id="profile-form">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                    <input type="text" id="first-name" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                    <input type="text" id="last-name" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input type="email" id="email" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                    <input type="tel" id="phone" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                                    <input type="date" id="dob" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                    <select id="gender" class="profile-input w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" disabled>
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 hidden" id="profile-actions">
+                                <div class="flex justify-end space-x-4">
+                                    <button type="button" onclick="cancelEditProfile()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Profile Stats -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Overview</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total Bookings</span>
+                                <span class="font-semibold" id="total-bookings-count">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total Spent</span>
+                                <span class="font-semibold" id="total-spent">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Member Since</span>
+                                <span class="font-semibold" id="member-since">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Loyalty Points</span>
+                                <span class="font-semibold text-indigo-600" id="loyalty-points">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                        
+                        <div class="space-y-3">
+                            <button onclick="goToMainSite()" class="w-full text-left px-4 py-3 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100">
+                                <i class="fas fa-video mr-3"></i>Browse Movies
+                            </button>
+                            <button onclick="showTab('bookings')" class="w-full text-left px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-history mr-3"></i>View Booking History
+                            </button>
+                            <button onclick="showTab('payments')" class="w-full text-left px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-plus mr-3"></i>Add Payment Method
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings Tab -->
+        <div id="bookings-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">My Bookings</h3>
+                        <div class="flex space-x-3">
+                            <select id="booking-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm" onchange="filterBookings()">
+                                <option value="all">All Bookings</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="bookings-list" class="p-6">
+                    <!-- Bookings will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods Tab -->
+        <div id="payments-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Saved Payment Methods -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Saved Payment Methods</h3>
+                            <button onclick="showAddPaymentModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>Add New
+                            </button>
+                        </div>
+                        
+                        <div id="payment-methods-list" class="space-y-4">
+                            <!-- Payment methods will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Stats -->
+                <div>
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">This Month</span>
+                                <span class="font-semibold" id="month-spending">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Last Payment</span>
+                                <span class="font-semibold" id="last-payment">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Avg. Per Booking</span>
+                                <span class="font-semibold" id="avg-payment">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preferences Tab -->
+        <div id="preferences-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Movie Preferences -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Movie Preferences</h3>
+                    
+                    <form id="preferences-form">
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Favorite Genres</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="action">
+                                        <span class="ml-2">Action</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="comedy">
+                                        <span class="ml-2">Comedy</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="drama">
+                                        <span class="ml-2">Drama</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="horror">
+                                        <span class="ml-2">Horror</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="romance">
+                                        <span class="ml-2">Romance</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="genre-checkbox rounded" value="sci-fi">
+                                        <span class="ml-2">Sci-Fi</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Theater Location</label>
+                                <select id="preferred-location" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Any Location</option>
+                                    <option value="downtown">Downtown</option>
+                                    <option value="uptown">Uptown</option>
+                                    <option value="mall">Shopping Mall</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Show Times</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="time-checkbox rounded" value="morning">
+                                        <span class="ml-2">Morning</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="time-checkbox rounded" value="afternoon">
+                                        <span class="ml-2">Afternoon</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="time-checkbox rounded" value="evening">
+                                        <span class="ml-2">Evening</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="mt-6 w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                            Save Preferences
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Notification Settings</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium">Email Notifications</p>
+                                <p class="text-sm text-gray-600">Receive booking confirmations via email</p>
+                            </div>
+                            <input type="checkbox" id="email-notifications" class="toggle-checkbox">
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium">SMS Notifications</p>
+                                <p class="text-sm text-gray-600">Receive booking updates via SMS</p>
+                            </div>
+                            <input type="checkbox" id="sms-notifications" class="toggle-checkbox">
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium">Movie Recommendations</p>
+                                <p class="text-sm text-gray-600">Get personalized movie suggestions</p>
+                            </div>
+                            <input type="checkbox" id="recommendations" class="toggle-checkbox">
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium">Promotional Offers</p>
+                                <p class="text-sm text-gray-600">Receive special offers and discounts</p>
+                            </div>
+                            <input type="checkbox" id="promotions" class="toggle-checkbox">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Login Tab -->
+        <div id="mobile-content" class="tab-content hidden">
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Mobile Authentication</h3>
+                    
+                    <div class="space-y-6">
+                        <!-- Mobile Number Verification -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                            <div class="flex">
+                                <select id="country-code" class="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50">
+                                    <option value="+91">+91 (India)</option>
+                                    <option value="+1">+1 (USA)</option>
+                                    <option value="+44">+44 (UK)</option>
+                                </select>
+                                <input type="tel" id="mobile-number" class="flex-1 border border-gray-300 rounded-r-lg px-3 py-2" placeholder="Enter mobile number">
+                            </div>
+                            <button onclick="requestOTP()" id="request-otp-btn" class="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                                Send OTP
+                            </button>
+                        </div>
+                        
+                        <!-- OTP Verification -->
+                        <div id="otp-section" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+                            <div class="flex space-x-2">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center border border-gray-300 rounded-lg text-lg">
+                            </div>
+                            <div class="mt-3 flex justify-between">
+                                <button onclick="verifyOTP()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                                    Verify OTP
+                                </button>
+                                <button onclick="resendOTP()" class="text-indigo-600 hover:text-indigo-800" id="resend-btn" disabled>
+                                    Resend OTP (<span id="countdown">30</span>s)
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile Login Status -->
+                        <div id="mobile-status" class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600">Mobile authentication allows you to quickly login to your account using your phone number and OTP.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Payment Method Modal -->
+    <div id="add-payment-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-md w-full">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Add Payment Method</h3>
+                        <button onclick="hideAddPaymentModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="add-payment-form" class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                            <select id="payment-type" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+                                <option value="">Select Type</option>
+                                <option value="credit_card">Credit Card</option>
+                                <option value="debit_card">Debit Card</option>
+                                <option value="phonepe">PhonePe</option>
+                                <option value="googlepay">Google Pay</option>
+                            </select>
+                        </div>
+                        
+                        <div id="card-details" class="hidden">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
+                                    <input type="text" id="card-number" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="1234 5678 9012 3456">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                                        <input type="text" id="card-expiry" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="MM/YY">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">CVV</label>
+                                        <input type="text" id="card-cvv" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="123">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cardholder Name</label>
+                                    <input type="text" id="cardholder-name" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="John Doe">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="upi-details" class="hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">UPI ID</label>
+                                <input type="text" id="upi-id" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="user@paytm">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" onclick="hideAddPaymentModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            Add Payment Method
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuration
+        const USER_API_BASE = 'http://127.0.0.1:8012/v1/user';
+        const MOBILE_API_BASE = 'http://127.0.0.1:8013/v1/mobile';
+        let userToken = localStorage.getItem('userToken');
+        let currentOTPSession = null;
+
+        // Initialize Dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            checkUserAuth();
+            if (userToken) {
+                loadUserProfile();
+                loadUserBookings();
+                loadPaymentMethods();
+            }
+            
+            // Setup form handlers
+            setupFormHandlers();
+            setupOTPInputs();
+        });
+
+        // Authentication
+        function checkUserAuth() {
+            if (!userToken) {
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+
+        function userLogout() {
+            localStorage.removeItem('userToken');
+            window.location.href = 'index.html';
+        }
+
+        function goToMainSite() {
+            window.location.href = 'index.html';
+        }
+
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-content`).classList.remove('hidden');
+            document.getElementById(`${tabName}-tab`).classList.add('tab-active');
+        }
+
+        // Profile Management
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(`${USER_API_BASE}/profile`, {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                
+                if (response.ok) {
+                    const profile = await response.json();
+                    displayUserProfile(profile);
+                } else {
+                    // Mock profile for demo
+                    displayUserProfile({
+                        user_id: 'user_123',
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        phone: '+1234567890',
+                        total_bookings: 12,
+                        total_spent: 450.00,
+                        member_since: '2023-01-15',
+                        loyalty_points: 250
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function displayUserProfile(profile) {
+            document.getElementById('user-name').textContent = profile.name || 'User Name';
+            document.getElementById('user-email').textContent = profile.email || 'user@example.com';
+            document.getElementById('first-name').value = profile.name?.split(' ')[0] || '';
+            document.getElementById('last-name').value = profile.name?.split(' ')[1] || '';
+            document.getElementById('email').value = profile.email || '';
+            document.getElementById('phone').value = profile.phone || '';
+            
+            // Update stats
+            document.getElementById('total-bookings-count').textContent = profile.total_bookings || 0;
+            document.getElementById('total-spent').textContent = `$${profile.total_spent?.toFixed(2) || '0.00'}`;
+            document.getElementById('member-since').textContent = profile.member_since ? new Date(profile.member_since).toLocaleDateString() : '-';
+            document.getElementById('loyalty-points').textContent = profile.loyalty_points || 0;
+        }
+
+        function toggleEditProfile() {
+            const inputs = document.querySelectorAll('.profile-input');
+            const actions = document.getElementById('profile-actions');
+            const editBtn = document.getElementById('edit-profile-btn');
+            
+            const isEditing = !inputs[0].disabled;
+            
+            inputs.forEach(input => {
+                input.disabled = isEditing;
+                input.classList.toggle('bg-gray-50', isEditing);
+                input.classList.toggle('bg-white', !isEditing);
+            });
+            
+            actions.classList.toggle('hidden', isEditing);
+            editBtn.innerHTML = isEditing ? '<i class="fas fa-edit mr-1"></i>Edit' : '<i class="fas fa-times mr-1"></i>Cancel';
+        }
+
+        function cancelEditProfile() {
+            toggleEditProfile();
+            loadUserProfile(); // Reload original data
+        }
+
+        // Booking Management
+        async function loadUserBookings() {
+            try {
+                const response = await fetch(`${USER_API_BASE}/bookings`, {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                
+                if (response.ok) {
+                    const bookings = await response.json();
+                    displayBookings(bookings);
+                } else {
+                    // Mock bookings for demo
+                    displayBookings([
+                        {
+                            booking_id: 'BKG001',
+                            movie_title: 'Avengers: Endgame',
+                            theater: 'IMAX Downtown',
+                            showtime: '2024-01-15T19:00:00Z',
+                            seats: ['A1', 'A2'],
+                            amount: 25.00,
+                            status: 'confirmed'
+                        },
+                        {
+                            booking_id: 'BKG002',
+                            movie_title: 'Inception',
+                            theater: 'Cinema Plus',
+                            showtime: '2024-01-10T21:30:00Z',
+                            seats: ['B5'],
+                            amount: 12.50,
+                            status: 'completed'
+                        }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookings-list');
+            
+            if (bookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No bookings found</p>';
+                return;
+            }
+            
+            container.innerHTML = bookings.map(booking => `
+                <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-lg">${booking.movie_title}</h4>
+                            <p class="text-gray-600">${booking.theater}</p>
+                            <p class="text-sm text-gray-500">
+                                ${new Date(booking.showtime).toLocaleString()} | 
+                                Seats: ${booking.seats.join(', ')}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-lg">$${booking.amount.toFixed(2)}</p>
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                            }">
+                                ${booking.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex space-x-3">
+                        <button class="text-indigo-600 hover:text-indigo-800 text-sm">
+                            <i class="fas fa-download mr-1"></i>Download Ticket
+                        </button>
+                        ${booking.status === 'confirmed' ? `
+                            <button class="text-red-600 hover:text-red-800 text-sm">
+                                <i class="fas fa-times mr-1"></i>Cancel Booking
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Payment Methods
+        async function loadPaymentMethods() {
+            try {
+                const response = await fetch(`${USER_API_BASE}/payment-methods`, {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                
+                if (response.ok) {
+                    const methods = await response.json();
+                    displayPaymentMethods(methods);
+                } else {
+                    // Mock payment methods
+                    displayPaymentMethods([
+                        {
+                            id: 'pm_1',
+                            type: 'credit_card',
+                            last_four: '4242',
+                            brand: 'Visa',
+                            exp_month: 12,
+                            exp_year: 2025,
+                            is_default: true
+                        },
+                        {
+                            id: 'pm_2',
+                            type: 'phonepe',
+                            upi_id: 'user@phonepe',
+                            is_default: false
+                        }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error loading payment methods:', error);
+            }
+        }
+
+        function displayPaymentMethods(methods) {
+            const container = document.getElementById('payment-methods-list');
+            
+            if (methods.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No payment methods added</p>';
+                return;
+            }
+            
+            container.innerHTML = methods.map(method => `
+                <div class="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-${method.type === 'credit_card' || method.type === 'debit_card' ? 'credit-card' : 'mobile-alt'} text-gray-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">
+                                ${method.type === 'credit_card' || method.type === 'debit_card' 
+                                    ? `•••• •••• •••• ${method.last_four}` 
+                                    : method.upi_id}
+                            </p>
+                            <p class="text-sm text-gray-600">
+                                ${method.type === 'credit_card' || method.type === 'debit_card' 
+                                    ? `${method.brand} • Expires ${method.exp_month}/${method.exp_year}`
+                                    : method.type.toUpperCase()}
+                            </p>
+                        </div>
+                        ${method.is_default ? '<span class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded">Default</span>' : ''}
+                    </div>
+                    <button onclick="deletePaymentMethod('${method.id}')" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Mobile Authentication
+        async function requestOTP() {
+            const countryCode = document.getElementById('country-code').value;
+            const mobileNumber = document.getElementById('mobile-number').value;
+            
+            if (!mobileNumber) {
+                alert('Please enter a mobile number');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${MOBILE_API_BASE}/request-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mobile_number: countryCode + mobileNumber,
+                        country_code: countryCode
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentOTPSession = data.session_id;
+                    showOTPSection();
+                    startCountdown();
+                } else {
+                    alert('Failed to send OTP');
+                }
+            } catch (error) {
+                console.error('Error requesting OTP:', error);
+                // Mock success for demo
+                currentOTPSession = 'mock_session_123';
+                showOTPSection();
+                startCountdown();
+            }
+        }
+
+        function showOTPSection() {
+            document.getElementById('otp-section').classList.remove('hidden');
+            document.getElementById('request-otp-btn').disabled = true;
+            document.getElementById('mobile-status').innerHTML = '<p class="text-sm text-green-600">OTP sent successfully to your mobile number.</p>';
+        }
+
+        function startCountdown() {
+            let seconds = 30;
+            const countdown = document.getElementById('countdown');
+            const resendBtn = document.getElementById('resend-btn');
+            
+            const timer = setInterval(() => {
+                seconds--;
+                countdown.textContent = seconds;
+                
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    resendBtn.disabled = false;
+                    resendBtn.innerHTML = 'Resend OTP';
+                }
+            }, 1000);
+        }
+
+        async function verifyOTP() {
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const otp = Array.from(otpInputs).map(input => input.value).join('');
+            
+            if (otp.length !== 6) {
+                alert('Please enter complete OTP');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${MOBILE_API_BASE}/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentOTPSession,
+                        otp: otp,
+                        mobile_number: document.getElementById('country-code').value + document.getElementById('mobile-number').value
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('mobile-status').innerHTML = '<p class="text-sm text-green-600">Mobile number verified successfully!</p>';
+                    // Could link this mobile account with current user account
+                } else {
+                    alert('Invalid OTP');
+                }
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                // Mock success for demo
+                document.getElementById('mobile-status').innerHTML = '<p class="text-sm text-green-600">Mobile number verified successfully!</p>';
+            }
+        }
+
+        // Modal Functions
+        function showAddPaymentModal() {
+            document.getElementById('add-payment-modal').classList.remove('hidden');
+        }
+
+        function hideAddPaymentModal() {
+            document.getElementById('add-payment-modal').classList.add('hidden');
+            document.getElementById('add-payment-form').reset();
+            document.getElementById('card-details').classList.add('hidden');
+            document.getElementById('upi-details').classList.add('hidden');
+        }
+
+        // Setup Functions
+        function setupFormHandlers() {
+            // Payment type change handler
+            document.getElementById('payment-type').addEventListener('change', function() {
+                const cardDetails = document.getElementById('card-details');
+                const upiDetails = document.getElementById('upi-details');
+                
+                if (this.value === 'credit_card' || this.value === 'debit_card') {
+                    cardDetails.classList.remove('hidden');
+                    upiDetails.classList.add('hidden');
+                } else if (this.value === 'phonepe' || this.value === 'googlepay') {
+                    cardDetails.classList.add('hidden');
+                    upiDetails.classList.remove('hidden');
+                } else {
+                    cardDetails.classList.add('hidden');
+                    upiDetails.classList.add('hidden');
+                }
+            });
+            
+            // Form submissions
+            document.getElementById('profile-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Handle profile update
+                console.log('Profile updated');
+                toggleEditProfile();
+            });
+            
+            document.getElementById('preferences-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Handle preferences update
+                console.log('Preferences updated');
+                alert('Preferences saved successfully!');
+            });
+            
+            document.getElementById('add-payment-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Handle add payment method
+                console.log('Payment method added');
+                hideAddPaymentModal();
+                loadPaymentMethods();
+            });
+        }
+
+        function setupOTPInputs() {
+            const otpInputs = document.querySelectorAll('.otp-input');
+            otpInputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    if (this.value && index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !this.value && index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                });
+            });
+        }
+
+        function filterBookings() {
+            // Filter bookings based on selection
+            console.log('Filtering bookings');
+        }
+
+        function deletePaymentMethod(methodId) {
+            if (confirm('Are you sure you want to delete this payment method?')) {
+                console.log('Deleting payment method:', methodId);
+                loadPaymentMethods();
+            }
+        }
+
+        function resendOTP() {
+            requestOTP();
+        }
+    </script>
+
+</body>
+</html>

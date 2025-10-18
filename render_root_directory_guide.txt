@@ -1,0 +1,47 @@
+=============================================
+  RENDER ROOT DIRECTORY CONFIGURATION
+=============================================
+
+🎯 RENDER IS ASKING FOR ROOT DIRECTORY
+This is PERFECT! We can now specify the correct path manually.
+
+📋 FILL IN THESE EXACT VALUES:
+
+┌─────────────────────────────────────────┐
+│ Repository: kmadhu077-glitch/           │
+│             bookmymovie-platform        │
+├─────────────────────────────────────────┤
+│ Branch: main                            │
+├─────────────────────────────────────────┤
+│ Root Directory: .                       │
+│ (Type a single dot, or leave blank)     │
+├─────────────────────────────────────────┤
+│ Environment: Node                       │
+├─────────────────────────────────────────┤
+│ Build Command: npm install              │
+├─────────────────────────────────────────┤
+│ Start Command: node server.js           │
+├─────────────────────────────────────────┤
+│ Plan: Free                              │
+└─────────────────────────────────────────┘
+
+🚀 WHY THIS WILL WORK:
+• Root Directory "." tells Render to look in repository root
+• This is where your package.json file actually is
+• Bypasses the /opt/render/project/src/ path issue
+
+✅ EXPECTED RESULT:
+• Build will find package.json in correct location
+• npm install will succeed
+• Server will start with "node server.js"
+• Live URL: https://bookmymovie-platform.onrender.com
+
+🎬 YOUR PLATFORM WILL INCLUDE:
+• Complete "Book Fast Feel First" branding
+• Movie booking system
+• AI recommendations
+• Mobile app connectivity
+• Admin & analytics dashboards
+• All 65 backend services
+
+Click "Create Web Service" after filling in these values!

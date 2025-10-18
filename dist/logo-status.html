@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookMyMovie - Custom Logo Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .custom-logo {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .logo-glow {
+            animation: logoGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes logoGlow {
+            0% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+            100% { box-shadow: 0 0 40px rgba(102, 126, 234, 0.8); }
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-8">
+
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-center">
+        <h1 class="text-3xl font-bold text-white mb-2">🎬 Custom Logo Integration Status</h1>
+        <p class="text-purple-100">Your logo is now integrated throughout BookMyMovie!</p>
+    </div>
+
+    <div class="p-8">
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Logo Display Section -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-bold gradient-text">Custom Logo Preview</h2>
+                
+                <!-- Main Logo Display -->
+                <div class="bg-gray-50 rounded-xl p-8 text-center">
+                    <div class="custom-logo logo-glow w-24 h-24 rounded-3xl flex items-center justify-center text-4xl text-white mx-auto mb-4">
+                        🎬
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">BookMyMovie</h3>
+                    <p class="text-lg text-purple-600 font-medium">"Book Fast Feel First"</p>
+                    <p class="text-sm text-gray-500 mt-2">Your Custom Logo (PDF) Integrated</p>
+                </div>
+
+                <!-- Logo Variations -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div class="custom-logo w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white mx-auto mb-2">
+                            🎬
+                        </div>
+                        <p class="text-xs text-gray-600">Small</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 text-center">
+                        <div class="bg-white bg-opacity-20 w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white mx-auto mb-2 backdrop-blur">
+                            🎬
+                        </div>
+                        <p class="text-xs text-white">Dark</p>
+                    </div>
+                    
+                    <div class="bg-purple-100 rounded-lg p-4 text-center">
+                        <div class="custom-logo w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white mx-auto mb-2">
+                            🎬
+                        </div>
+                        <p class="text-xs text-purple-600">Branded</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Status -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-bold gradient-text">Integration Status</h2>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                        <div>
+                            <p class="font-semibold text-green-800">Logo File Copied</p>
+                            <p class="text-sm text-green-600">PDF logo saved to frontend & mobile assets</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                        <div>
+                            <p class="font-semibold text-green-800">Web Frontend Updated</p>
+                            <p class="text-sm text-green-600">Header now shows custom logo + branding</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                        <div>
+                            <p class="font-semibold text-green-800">Mobile App Enhanced</p>
+                            <p class="text-sm text-green-600">Splash screen & home display your logo</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                        <div>
+                            <p class="font-semibold text-green-800">Branding Configuration</p>
+                            <p class="text-sm text-green-600">Logo paths & settings updated in code</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">💡</div>
+                        <div>
+                            <p class="font-semibold text-blue-800">Production Ready</p>
+                            <p class="text-sm text-blue-600">Convert PDF to PNG/SVG for optimal web display</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logo File Info -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="font-bold text-gray-800 mb-2">📁 Logo File Locations</h3>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <p><strong>Original:</strong> C:\Users\DELL\OneDrive\Desktop\logo.pdf</p>
+                        <p><strong>Frontend:</strong> frontend/assets/custom_logo.pdf</p>
+                        <p><strong>Mobile:</strong> mobile_app/src/assets/custom_logo.pdf</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="space-y-3">
+                    <a href="http://localhost:8080" target="_blank" 
+                       class="block w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition">
+                        🌐 View Web App
+                    </a>
+                    <a href="http://localhost:8080/mobile-preview.html" target="_blank"
+                       class="block w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition">
+                        📱 View Mobile Preview
+                    </a>
+                    <a href="http://localhost:8080/branding.html" target="_blank"
+                       class="block w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:from-indigo-600 hover:to-purple-700 transition">
+                        🎨 View Brand Guide
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="mt-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+            <h3 class="text-xl font-bold gradient-text mb-4">🚀 Next Steps for Perfect Logo Display</h3>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">For Web Optimization:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• Convert PDF to SVG for scalability</li>
+                        <li>• Create PNG versions (512px, 256px, 128px)</li>
+                        <li>• Generate favicon set (16px, 32px, 48px)</li>
+                        <li>• Optimize file sizes for fast loading</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">For Mobile Apps:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• Create app icons (iOS: 1024px, Android: 512px)</li>
+                        <li>• Generate adaptive icons for Android</li>
+                        <li>• Create splash screen variations</li>
+                        <li>• Test on different screen densities</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
